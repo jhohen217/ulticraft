@@ -1,5 +1,13 @@
+import os
+import sys
 from nextcord import Interaction
 from nextcord.ext import commands
+
+# Add the project root directory to Python path for proper imports
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
 from utils import check_channel, config
 from version import VERSION
 
@@ -9,7 +17,8 @@ class PingCommand(commands.Cog):
 
     @commands.slash_command(
         name="ping",
-        description="Simple ping command to check if bot is responsive."
+        description="Simple ping command to check if bot is responsive.",
+        guild_ids=[int(config['guild_id'])]  # Explicitly register for our guild
     )
     async def ping(self, interaction: Interaction):
         if not check_channel(interaction):
@@ -25,4 +34,5 @@ class PingCommand(commands.Cog):
         )
 
 def setup(bot):
+    print(f"Setting up {__file__}")
     bot.add_cog(PingCommand(bot))

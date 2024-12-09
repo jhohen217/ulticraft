@@ -1,5 +1,13 @@
+import os
+import sys
 from nextcord import Interaction, SlashOption
 from nextcord.ext import commands
+
+# Add the project root directory to Python path for proper imports
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
 from utils import check_channel, is_authorized, get_rcon_client, config
 
 class MinecraftCommands(commands.Cog):
@@ -8,7 +16,8 @@ class MinecraftCommands(commands.Cog):
 
     @commands.slash_command(
         name="rcon",
-        description="Send a command to the Minecraft server via RCON."
+        description="Send a command to the Minecraft server via RCON.",
+        guild_ids=[int(config['guild_id'])]
     )
     async def rcon(
         self,
@@ -52,7 +61,8 @@ class MinecraftCommands(commands.Cog):
 
     @commands.slash_command(
         name="players",
-        description="List all currently connected players."
+        description="List all currently connected players.",
+        guild_ids=[int(config['guild_id'])]
     )
     async def players(self, interaction: Interaction):
         if not check_channel(interaction):
@@ -83,7 +93,8 @@ class MinecraftCommands(commands.Cog):
 
     @commands.slash_command(
         name="whitelist",
-        description="Add a player to the server whitelist."
+        description="Add a player to the server whitelist.",
+        guild_ids=[int(config['guild_id'])]
     )
     async def whitelist(
         self,
@@ -133,7 +144,8 @@ class MinecraftCommands(commands.Cog):
 
     @commands.slash_command(
         name="morning",
-        description="Skip to morning time in the Minecraft server."
+        description="Skip to morning time in the Minecraft server.",
+        guild_ids=[int(config['guild_id'])]
     )
     async def morning(self, interaction: Interaction):
         if not check_channel(interaction):
@@ -169,4 +181,5 @@ class MinecraftCommands(commands.Cog):
             await interaction.followup.send("❌ Failed to connect to Minecraft server")
 
 def setup(bot):
+    print(f"Setting up {__file__}")
     bot.add_cog(MinecraftCommands(bot))

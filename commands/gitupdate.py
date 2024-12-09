@@ -1,7 +1,14 @@
 import os
+import sys
 import subprocess
 from nextcord import Interaction
 from nextcord.ext import commands
+
+# Add the project root directory to Python path for proper imports
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
 from utils import check_channel, is_authorized, config
 
 class GitUpdateCommand(commands.Cog):
@@ -10,7 +17,8 @@ class GitUpdateCommand(commands.Cog):
 
     @commands.slash_command(
         name="gitupdate",
-        description="Pull latest code from Git and restart the bot."
+        description="Pull latest code from Git and restart the bot.",
+        guild_ids=[int(config['guild_id'])]
     )
     async def gitupdate(self, interaction: Interaction):
         if not check_channel(interaction):
@@ -70,4 +78,5 @@ class GitUpdateCommand(commands.Cog):
             )
 
 def setup(bot):
+    print(f"Setting up {__file__}")
     bot.add_cog(GitUpdateCommand(bot))

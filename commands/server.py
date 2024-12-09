@@ -1,9 +1,16 @@
 import os
+import sys
 import subprocess
 import time
 import psutil
 from nextcord import Interaction
 from nextcord.ext import commands
+
+# Add the project root directory to Python path for proper imports
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
 from utils import check_channel, is_authorized, get_rcon_client, config
 
 class ServerCommands(commands.Cog):
@@ -63,7 +70,8 @@ class ServerCommands(commands.Cog):
 
     @commands.slash_command(
         name="start",
-        description="Start the Minecraft server."
+        description="Start the Minecraft server.",
+        guild_ids=[int(config['guild_id'])]
     )
     async def start(self, interaction: Interaction):
         if not check_channel(interaction):
@@ -115,7 +123,8 @@ class ServerCommands(commands.Cog):
 
     @commands.slash_command(
         name="stop",
-        description="Stop the Minecraft server."
+        description="Stop the Minecraft server.",
+        guild_ids=[int(config['guild_id'])]
     )
     async def stop(self, interaction: Interaction):
         if not check_channel(interaction):
@@ -145,7 +154,8 @@ class ServerCommands(commands.Cog):
 
     @commands.slash_command(
         name="restart",
-        description="Restart the Minecraft server."
+        description="Restart the Minecraft server.",
+        guild_ids=[int(config['guild_id'])]
     )
     async def restart(self, interaction: Interaction):
         if not check_channel(interaction):
@@ -200,4 +210,5 @@ class ServerCommands(commands.Cog):
             await interaction.followup.send(f"❌ Error during restart: {str(e)}")
 
 def setup(bot):
+    print(f"Setting up {__file__}")
     bot.add_cog(ServerCommands(bot))

@@ -1,9 +1,16 @@
+import os
+import sys
 from mctools import RCONClient
 from nextcord import Interaction
 import json
 
+# Add the project root directory to Python path for proper imports
+project_root = os.path.dirname(os.path.abspath(__file__))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
 # Load configuration
-with open('config.json', 'r') as f:
+with open(os.path.join(project_root, 'config.json'), 'r') as f:
     config = json.load(f)
 
 def get_rcon_client():
