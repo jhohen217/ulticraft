@@ -17,31 +17,81 @@ except json.JSONDecodeError:
     print("Error: config.json is invalid!")
     sys.exit(1)
 
-# Setup bot with intents
-intents = nextcord.Intents.default()
+# Setup bot with all intents
+intents = nextcord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
+
+def check_channel(interaction: Interaction) -> bool:
+    """Check if the command is used in the correct channel"""
+    return str(interaction.channel_id) == config['bot_channel_id']
 
 @bot.event
 async def on_ready():
+    """Bot startup event handler"""
+    print(f"=== Ulticraft Bot v{config['version']} ===")
     print(f"Logged in as {bot.user}")
     print(f"Bot is ready to serve in guild: {config['guild_id']}")
+    print(f"Bot channel: {config['bot_channel_id']}")
+    
+    try:
+        # Sync commands globally first
+        print("Starting global command sync...")
+        await bot.sync_all_application_commands()
+        print("Global command sync complete!")
+        
+        # Then sync for specific guild
+        guild_id = int(config['guild_id'])
+        print(f"Syncing commands for guild ID: {guild_id}")
+        guild = bot.get_guild(guild_id)
+        if guild:
+            await bot.sync_application_commands(guild_id=guild_id)
+            print(f"Successfully synced commands for guild: {guild.name}")
+            
+            # Send startup message to bot channel
+            channel = guild.get_channel(int(config['bot_channel_id']))
+            if channel:
+                await channel.send(f"🚀 Ulticraft Bot v{config['version']} is now online!")
+            else:
+                print(f"Warning: Could not find channel with ID: {config['bot_channel_id']}")
+        else:
+            print(f"Warning: Could not find guild with ID: {guild_id}")
+            print("Available guilds:", [f"{g.name} ({g.id})" for g in bot.guilds])
+    except Exception as e:
+        print(f"Error during startup: {str(e)}")
 
 def is_authorized(interaction: Interaction) -> bool:
     """Check if the user is authorized to use admin commands"""
     return str(interaction.user.id) in config['authorized_users']
 
 @bot.slash_command(
-    guild_ids=[int(config['guild_id'])],
+    name="ping",
     description="Simple ping command to check if bot is responsive."
 )
 async def ping(interaction: Interaction):
-    await interaction.response.send_message("🏓 Pong!", ephemeral=True)
+    if not check_channel(interaction):
+        await interaction.response.send_message(
+            f"⚠️ Please use this command in <#{config['bot_channel_id']}>", 
+            ephemeral=True
+        )
+        return
+    
+    await interaction.response.send_message(
+        f"🏓 Pong! Bot v{config['version']}", 
+        ephemeral=True
+    )
 
 @bot.slash_command(
-    guild_ids=[int(config['guild_id'])], 
+    name="gitupdate",
     description="Pull latest code from Git and restart the bot."
 )
 async def gitupdate(interaction: Interaction):
+    if not check_channel(interaction):
+        await interaction.response.send_message(
+            f"⚠️ Please use this command in <#{config['bot_channel_id']}>", 
+            ephemeral=True
+        )
+        return
+
     if not is_authorized(interaction):
         await interaction.response.send_message(
             "⛔ You are not authorized to use this command.", 
@@ -64,7 +114,12 @@ async def gitupdate(interaction: Interaction):
             stderr=subprocess.STDOUT
         ).decode("utf-8")
 
-        # Notify in Discord what happened
+        # Send update message to bot channel
+        channel = bot.get_channel(int(config['bot_channel_id']))
+        if channel:
+            await channel.send(f"📥 Bot update initiated by {interaction.user.display_name}")
+
+        # Notify command user
         await interaction.followup.send(
             f"📥 Git pull output:\n```{git_output}```\n🔄 Restarting bot...", 
             ephemeral=True
