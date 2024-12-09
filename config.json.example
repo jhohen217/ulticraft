@@ -1,10 +1,19 @@
 {
-    "discord_token": "YOUR_BOT_TOKEN_HERE",
+    "discord_token": "YOUR_DISCORD_BOT_TOKEN",
     "authorized_users": [
         "USER_ID_1",
         "USER_ID_2"
     ],
-    "guild_id": "YOUR_GUILD_ID_HERE",
-    "bot_channel_id": "YOUR_CHANNEL_ID_HERE",
-    "version": "1.0.0"
+    "guild_id": "YOUR_GUILD_ID",
+    "bot_channel_id": "YOUR_CHANNEL_ID",
+    "rcon": {
+        "host": "YOUR_MINECRAFT_SERVER_IP",
+        "port": 25575,
+        "password": "YOUR_RCON_PASSWORD"
+    },
+    "minecraft_server": {
+        "directory": "PATH_TO_SERVER_DIRECTORY",
+        "start_command": "java -Xmx4G -Xms4G -jar server.jar nogui",
+        "stop_timeout": 60
+    }
 }
