@@ -91,6 +91,7 @@ A Discord bot for managing a Minecraft server with RCON integration.
 
 ## Version History
 
+- 1.2.1: Fixed command registration and improved module imports
 - 1.2.0: Added server management commands and RCON integration
 - 1.1.0: Restructured commands and added version tracking
 - 1.0.0: Initial release
