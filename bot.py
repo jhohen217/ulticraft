@@ -1,6 +1,7 @@
 import os
 import json
 import sys
+import asyncio
 import nextcord
 from nextcord.ext import commands
 from version import VERSION
@@ -21,50 +22,15 @@ except json.JSONDecodeError:
     print("Error: config.json is invalid!")
     sys.exit(1)
 
-# Setup bot with all intents
+# Setup bot with all intents and command sync flags
 intents = nextcord.Intents.all()
-bot = commands.Bot(command_prefix="!", intents=intents)
-
-@bot.event
-async def on_ready():
-    """Bot startup event handler"""
-    print(f"=== Ulticraft Bot v{VERSION} ===")
-    print(f"Logged in as {bot.user}")
-    print(f"Bot is ready to serve in guild: {config['guild_id']}")
-    print(f"Bot channel: {config['bot_channel_id']}")
-    
-    try:
-        guild_id = int(config['guild_id'])
-        guild = bot.get_guild(guild_id)
-        
-        if guild:
-            print(f"Found guild: {guild.name}")
-            # First sync commands for our specific guild
-            await bot.sync_application_commands(guild_id=guild_id)
-            print(f"Successfully synced commands for guild: {guild.name}")
-            
-            # Then sync globally to ensure all commands are available
-            print("Starting global command sync...")
-            await bot.sync_all_application_commands()
-            print("Global command sync complete!")
-            
-            # Send startup message to bot channel
-            channel = guild.get_channel(int(config['bot_channel_id']))
-            if channel:
-                await channel.send(f"🚀 Ulticraft Bot v{VERSION} is now online!")
-                # List registered commands
-                commands = await bot.get_application_commands(guild_id=guild_id)
-                command_list = "\n".join([f"- /{cmd.name}" for cmd in commands])
-                await channel.send(f"Available commands:\n```\n{command_list}\n```")
-            else:
-                print(f"Warning: Could not find channel with ID: {config['bot_channel_id']}")
-        else:
-            print(f"Warning: Could not find guild with ID: {guild_id}")
-            print("Available guilds:", [f"{g.name} ({g.id})" for g in bot.guilds])
-    except Exception as e:
-        print(f"Error during startup: {str(e)}")
-        import traceback
-        traceback.print_exc()
+bot = commands.Bot(
+    command_prefix="!",
+    intents=intents,
+    sync_commands=True,
+    sync_commands_debug=True,
+    default_guild_ids=[int(config['guild_id'])]
+)
 
 def load_commands():
     """Load all command modules from the commands directory"""
@@ -82,14 +48,86 @@ def load_commands():
                 import traceback
                 traceback.print_exc()
 
-if __name__ == "__main__":
+async def sync_commands():
+    """Sync commands with Discord"""
+    try:
+        print("Starting command sync...")
+        guild_id = int(config['guild_id'])
+        guild = bot.get_guild(guild_id)
+        
+        if guild:
+            print(f"Found guild: {guild.name}")
+            # Sync commands specifically for our guild
+            await bot.sync_application_commands(guild_id=guild_id)
+            print(f"Successfully synced commands for guild: {guild.name}")
+            
+            # List registered commands
+            commands = await bot.get_application_commands(guild_id=guild_id)
+            print("\nRegistered commands:")
+            for cmd in commands:
+                print(f"- /{cmd.name}")
+        else:
+            print(f"Warning: Could not find guild with ID: {guild_id}")
+            print("Available guilds:", [f"{g.name} ({g.id})" for g in bot.guilds])
+            
+            # Try global sync as fallback
+            print("Attempting global command sync...")
+            await bot.sync_all_application_commands()
+            print("Global command sync complete!")
+    except Exception as e:
+        print(f"Error during command sync: {str(e)}")
+        import traceback
+        traceback.print_exc()
+
+@bot.event
+async def on_ready():
+    """Bot startup event handler"""
+    print(f"=== Ulticraft Bot v{VERSION} ===")
+    print(f"Logged in as {bot.user}")
+    print(f"Bot is ready to serve in guild: {config['guild_id']}")
+    print(f"Bot channel: {config['bot_channel_id']}")
+    
+    try:
+        # Send startup message to bot channel
+        guild_id = int(config['guild_id'])
+        guild = bot.get_guild(guild_id)
+        if guild:
+            channel = guild.get_channel(int(config['bot_channel_id']))
+            if channel:
+                await channel.send(f"🚀 Ulticraft Bot v{VERSION} is now online!")
+                
+                # List available commands
+                commands = await bot.get_application_commands(guild_id=guild_id)
+                if commands:
+                    command_list = "\n".join([f"- /{cmd.name}" for cmd in commands])
+                    await channel.send(f"Available commands:\n```\n{command_list}\n```")
+                else:
+                    await channel.send("⚠️ No commands are currently registered!")
+            else:
+                print(f"Warning: Could not find channel with ID: {config['bot_channel_id']}")
+    except Exception as e:
+        print(f"Error during startup message: {str(e)}")
+        import traceback
+        traceback.print_exc()
+
+async def main():
+    """Main entry point with proper command sync"""
     try:
         print("Starting command loading process...")
         load_commands()
-        print("Command loading complete, starting bot...")
-        bot.run(config['discord_token'])
+        print("Command loading complete")
+        
+        print("\nStarting command sync process...")
+        await sync_commands()
+        print("Command sync complete")
+        
+        print("\nStarting bot...")
+        await bot.start(config['discord_token'])
     except Exception as e:
         print(f"Failed to start bot: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
+
+if __name__ == "__main__":
+    asyncio.run(main())
