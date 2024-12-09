@@ -1,0 +1,14 @@
+[Unit]
+Description=Ulticraft Discord Bot
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/ulticraft
+ExecStart=/usr/bin/python3 /ulticraft/bot.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
