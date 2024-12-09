@@ -22,15 +22,9 @@ except json.JSONDecodeError:
     print("Error: config.json is invalid!")
     sys.exit(1)
 
-# Setup bot with all intents and command sync flags
+# Setup bot with all intents
 intents = nextcord.Intents.all()
-bot = commands.Bot(
-    command_prefix="!",
-    intents=intents,
-    sync_commands=True,
-    sync_commands_debug=True,
-    default_guild_ids=[int(config['guild_id'])]
-)
+bot = commands.Bot(command_prefix="!", intents=intents)
 
 def load_commands():
     """Load all command modules from the commands directory"""
@@ -88,6 +82,9 @@ async def on_ready():
     print(f"Bot channel: {config['bot_channel_id']}")
     
     try:
+        # Sync commands first
+        await sync_commands()
+        
         # Send startup message to bot channel
         guild_id = int(config['guild_id'])
         guild = bot.get_guild(guild_id)
@@ -110,24 +107,14 @@ async def on_ready():
         import traceback
         traceback.print_exc()
 
-async def main():
-    """Main entry point with proper command sync"""
+if __name__ == "__main__":
     try:
         print("Starting command loading process...")
         load_commands()
-        print("Command loading complete")
-        
-        print("\nStarting command sync process...")
-        await sync_commands()
-        print("Command sync complete")
-        
-        print("\nStarting bot...")
-        await bot.start(config['discord_token'])
+        print("Command loading complete, starting bot...")
+        bot.run(config['discord_token'])
     except Exception as e:
         print(f"Failed to start bot: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
-
-if __name__ == "__main__":
-    asyncio.run(main())
