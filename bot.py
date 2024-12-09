@@ -6,6 +6,8 @@ import nextcord
 from nextcord.ext import commands
 from nextcord import Interaction
 
+VERSION = "1.1.0"
+
 # Load configuration
 try:
     with open('config.json', 'r') as f:
@@ -28,7 +30,7 @@ def check_channel(interaction: Interaction) -> bool:
 @bot.event
 async def on_ready():
     """Bot startup event handler"""
-    print(f"=== Ulticraft Bot v{config['version']} ===")
+    print(f"=== Ulticraft Bot v{VERSION} ===")
     print(f"Logged in as {bot.user}")
     print(f"Bot is ready to serve in guild: {config['guild_id']}")
     print(f"Bot channel: {config['bot_channel_id']}")
@@ -50,7 +52,7 @@ async def on_ready():
             # Send startup message to bot channel
             channel = guild.get_channel(int(config['bot_channel_id']))
             if channel:
-                await channel.send(f"🚀 Ulticraft Bot v{config['version']} is now online!")
+                await channel.send(f"🚀 Ulticraft Bot v{VERSION} is now online!")
             else:
                 print(f"Warning: Could not find channel with ID: {config['bot_channel_id']}")
         else:
@@ -76,7 +78,7 @@ async def ping(interaction: Interaction):
         return
     
     await interaction.response.send_message(
-        f"🏓 Pong! Bot v{config['version']}", 
+        f"🏓 Pong! Bot v{VERSION}", 
         ephemeral=True
     )
 
