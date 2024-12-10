@@ -57,9 +57,10 @@ async def sync_commands():
             
             # List registered commands
             print("\nRegistered commands:")
-            commands = await bot.get_application_commands()
+            commands = bot.get_application_commands()
             for cmd in commands:
                 print(f"- /{cmd.name}")
+            return commands
         else:
             print(f"Warning: Could not find guild with ID: {guild_id}")
             print("Available guilds:", [f"{g.name} ({g.id})" for g in bot.guilds])
@@ -68,10 +69,12 @@ async def sync_commands():
             print("Attempting global command sync...")
             await bot.sync_all_application_commands()
             print("Global command sync complete!")
+            return bot.get_application_commands()
     except Exception as e:
         print(f"Error during command sync: {str(e)}")
         import traceback
         traceback.print_exc()
+        return []
 
 @bot.event
 async def on_ready():
@@ -83,7 +86,7 @@ async def on_ready():
     
     try:
         # Sync commands first
-        await sync_commands()
+        commands = await sync_commands()
         
         # Send startup message to bot channel
         guild_id = int(config['guild_id'])
@@ -94,7 +97,6 @@ async def on_ready():
                 await channel.send(f"🚀 Ulticraft Bot v{VERSION} is now online!")
                 
                 # List available commands
-                commands = await bot.get_application_commands()
                 if commands:
                     command_list = "\n".join([f"- /{cmd.name}" for cmd in commands])
                     await channel.send(f"Available commands:\n```\n{command_list}\n```")
