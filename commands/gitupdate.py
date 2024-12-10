@@ -1,7 +1,7 @@
 import os
 import sys
 import subprocess
-from nextcord import Interaction
+from nextcord import Interaction, slash_command
 from nextcord.ext import commands
 
 # Add the project root directory to Python path for proper imports
@@ -15,7 +15,7 @@ class GitUpdateCommand(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.slash_command(
+    @slash_command(
         name="gitupdate",
         description="Pull latest code from Git and restart the bot.",
         guild_ids=[int(config['guild_id'])]

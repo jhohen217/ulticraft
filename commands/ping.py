@@ -1,6 +1,6 @@
 import os
 import sys
-from nextcord import Interaction
+from nextcord import Interaction, slash_command
 from nextcord.ext import commands
 
 # Add the project root directory to Python path for proper imports
@@ -15,7 +15,7 @@ class PingCommand(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.slash_command(
+    @slash_command(
         name="ping",
         description="Simple ping command to check if bot is responsive.",
         guild_ids=[int(config['guild_id'])]

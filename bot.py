@@ -57,7 +57,8 @@ async def sync_commands():
             
             # List registered commands
             print("\nRegistered commands:")
-            for cmd in bot.application_commands:
+            commands = await bot.get_application_commands()
+            for cmd in commands:
                 print(f"- /{cmd.name}")
         else:
             print(f"Warning: Could not find guild with ID: {guild_id}")
@@ -93,8 +94,9 @@ async def on_ready():
                 await channel.send(f"🚀 Ulticraft Bot v{VERSION} is now online!")
                 
                 # List available commands
-                if bot.application_commands:
-                    command_list = "\n".join([f"- /{cmd.name}" for cmd in bot.application_commands])
+                commands = await bot.get_application_commands()
+                if commands:
+                    command_list = "\n".join([f"- /{cmd.name}" for cmd in commands])
                     await channel.send(f"Available commands:\n```\n{command_list}\n```")
                 else:
                     await channel.send("⚠️ No commands are currently registered!")

@@ -3,7 +3,7 @@ import sys
 import subprocess
 import time
 import psutil
-from nextcord import Interaction
+from nextcord import Interaction, slash_command
 from nextcord.ext import commands
 
 # Add the project root directory to Python path for proper imports
@@ -68,7 +68,7 @@ class ServerCommands(commands.Cog):
                 return False
         return False
 
-    @commands.slash_command(
+    @slash_command(
         name="start",
         description="Start the Minecraft server.",
         guild_ids=[int(config['guild_id'])]
@@ -121,7 +121,7 @@ class ServerCommands(commands.Cog):
         except Exception as e:
             await interaction.followup.send(f"❌ Error starting server: {str(e)}")
 
-    @commands.slash_command(
+    @slash_command(
         name="stop",
         description="Stop the Minecraft server.",
         guild_ids=[int(config['guild_id'])]
@@ -152,7 +152,7 @@ class ServerCommands(commands.Cog):
         else:
             await interaction.followup.send("❌ Failed to stop server!")
 
-    @commands.slash_command(
+    @slash_command(
         name="restart",
         description="Restart the Minecraft server.",
         guild_ids=[int(config['guild_id'])]

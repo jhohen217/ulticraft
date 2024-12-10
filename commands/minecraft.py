@@ -1,6 +1,6 @@
 import os
 import sys
-from nextcord import Interaction, SlashOption
+from nextcord import Interaction, SlashOption, slash_command
 from nextcord.ext import commands
 
 # Add the project root directory to Python path for proper imports
@@ -14,7 +14,7 @@ class MinecraftCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.slash_command(
+    @slash_command(
         name="rcon",
         description="Send a command to the Minecraft server via RCON.",
         guild_ids=[int(config['guild_id'])]
@@ -59,7 +59,7 @@ class MinecraftCommands(commands.Cog):
         else:
             await interaction.followup.send("❌ Failed to connect to Minecraft server")
 
-    @commands.slash_command(
+    @slash_command(
         name="players",
         description="List all currently connected players.",
         guild_ids=[int(config['guild_id'])]
@@ -91,7 +91,7 @@ class MinecraftCommands(commands.Cog):
         else:
             await interaction.followup.send("❌ Failed to connect to Minecraft server")
 
-    @commands.slash_command(
+    @slash_command(
         name="whitelist",
         description="Add a player to the server whitelist.",
         guild_ids=[int(config['guild_id'])]
@@ -142,7 +142,7 @@ class MinecraftCommands(commands.Cog):
         else:
             await interaction.followup.send("❌ Failed to connect to Minecraft server")
 
-    @commands.slash_command(
+    @slash_command(
         name="morning",
         description="Skip to morning time in the Minecraft server.",
         guild_ids=[int(config['guild_id'])]
