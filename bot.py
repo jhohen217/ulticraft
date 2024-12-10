@@ -3,8 +3,10 @@ import json
 import sys
 import asyncio
 import nextcord
-from nextcord.ext import commands
+from nextcord.ext import commands, tasks
 from version import VERSION
+from mctools import RCONClient
+from mctools.mclient import mclient
 
 # Add the project root directory to Python path for proper imports
 project_root = os.path.dirname(os.path.abspath(__file__))
@@ -25,6 +27,31 @@ except json.JSONDecodeError:
 # Setup bot with all intents
 intents = nextcord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
+
+async def get_player_count():
+    """Get the current player count from the Minecraft server"""
+    try:
+        # Use mctools to query the server
+        client = mclient(config['rcon']['host'])
+        status = client.get_status()
+        if status:
+            return status.players_online
+    except Exception as e:
+        print(f"Error getting player count: {e}")
+    return 0
+
+@tasks.loop(minutes=5)
+async def update_status():
+    """Update the bot's status with the current player count"""
+    try:
+        player_count = await get_player_count()
+        activity = nextcord.Activity(
+            type=nextcord.ActivityType.watching,
+            name=f"{player_count} players online"
+        )
+        await bot.change_presence(activity=activity)
+    except Exception as e:
+        print(f"Error updating status: {e}")
 
 def load_commands():
     """Load all command modules from the commands directory"""
@@ -84,6 +111,11 @@ async def on_ready():
     print(f"Bot is ready to serve in guild: {config['guild_id']}")
     print(f"Bot channel: {config['bot_channel_id']}")
     
+    # Start the status update task
+    if not update_status.is_running():
+        update_status.start()
+        print("Started status update task")
+    
     try:
         # Sync commands first
         commands = await sync_commands()
@@ -108,6 +140,11 @@ async def on_ready():
         print(f"Error during startup message: {str(e)}")
         import traceback
         traceback.print_exc()
+
+@update_status.before_loop
+async def before_update_status():
+    """Wait for the bot to be ready before starting the status update task"""
+    await bot.wait_until_ready()
 
 if __name__ == "__main__":
     try:
