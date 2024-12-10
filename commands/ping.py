@@ -18,7 +18,7 @@ class PingCommand(commands.Cog):
     @commands.slash_command(
         name="ping",
         description="Simple ping command to check if bot is responsive.",
-        guild_ids=[int(config['guild_id'])]  # Explicitly register for our guild
+        guild_ids=[int(config['guild_id'])]
     )
     async def ping(self, interaction: Interaction):
         if not check_channel(interaction):

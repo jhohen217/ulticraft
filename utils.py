@@ -10,7 +10,8 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 
 # Load configuration
-with open(os.path.join(project_root, 'config.json'), 'r') as f:
+config_path = os.path.join(project_root, 'config.json')
+with open(config_path, 'r') as f:
     config = json.load(f)
 
 def get_rcon_client():
