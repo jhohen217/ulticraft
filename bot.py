@@ -1,159 +1,61 @@
-import os
-import json
-import sys
-import asyncio
 import nextcord
-from nextcord.ext import commands, tasks
-from version import VERSION
-from mctools import RCONClient
-from mctools.mclient import mclient
+from nextcord.ext import commands
+import json
+import os
 
-# Add the project root directory to Python path for proper imports
-project_root = os.path.dirname(os.path.abspath(__file__))
-if project_root not in sys.path:
-    sys.path.append(project_root)
+# Load config
+with open('config.json') as f:
+    config = json.load(f)
 
-# Load configuration
-try:
-    with open('config.json', 'r') as f:
-        config = json.load(f)
-except FileNotFoundError:
-    print("Error: config.json not found!")
-    sys.exit(1)
-except json.JSONDecodeError:
-    print("Error: config.json is invalid!")
-    sys.exit(1)
+TOKEN = config['discord_token']
+GUILD_ID = int(config['guild_id'])
 
-# Setup bot with all intents
-intents = nextcord.Intents.all()
+# Initialize bot with specific intents
+intents = nextcord.Intents.default()
+intents.message_content = True
+intents.guilds = True
 bot = commands.Bot(command_prefix="!", intents=intents)
-
-async def get_player_count():
-    """Get the current player count from the Minecraft server"""
-    try:
-        # Use mctools to query the server
-        client = mclient(config['rcon']['host'])
-        status = client.get_status()
-        if status:
-            return status.players_online
-    except Exception as e:
-        print(f"Error getting player count: {e}")
-    return 0
-
-@tasks.loop(minutes=5)
-async def update_status():
-    """Update the bot's status with the current player count"""
-    try:
-        player_count = await get_player_count()
-        activity = nextcord.Activity(
-            type=nextcord.ActivityType.watching,
-            name=f"{player_count} players online"
-        )
-        await bot.change_presence(activity=activity)
-    except Exception as e:
-        print(f"Error updating status: {e}")
-
-def load_commands():
-    """Load all command modules from the commands directory"""
-    commands_dir = os.path.join(project_root, 'commands')
-    print(f"Loading commands from: {commands_dir}")
-    
-    for filename in os.listdir(commands_dir):
-        if filename.endswith('.py'):
-            command_module = f'commands.{filename[:-3]}'
-            try:
-                bot.load_extension(command_module)
-                print(f"✓ Loaded command module: {command_module}")
-            except Exception as e:
-                print(f"✗ Failed to load command module {command_module}: {str(e)}")
-                import traceback
-                traceback.print_exc()
-
-async def sync_commands():
-    """Sync commands with Discord"""
-    try:
-        print("Starting command sync...")
-        guild_id = int(config['guild_id'])
-        guild = bot.get_guild(guild_id)
-        
-        if guild:
-            print(f"Found guild: {guild.name}")
-            # Sync commands specifically for our guild
-            await bot.sync_application_commands(guild_id=guild_id)
-            print(f"Successfully synced commands for guild: {guild.name}")
-            
-            # List registered commands
-            print("\nRegistered commands:")
-            commands = bot.get_application_commands()
-            for cmd in commands:
-                print(f"- /{cmd.name}")
-            return commands
-        else:
-            print(f"Warning: Could not find guild with ID: {guild_id}")
-            print("Available guilds:", [f"{g.name} ({g.id})" for g in bot.guilds])
-            
-            # Try global sync as fallback
-            print("Attempting global command sync...")
-            await bot.sync_all_application_commands()
-            print("Global command sync complete!")
-            return bot.get_application_commands()
-    except Exception as e:
-        print(f"Error during command sync: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return []
 
 @bot.event
 async def on_ready():
-    """Bot startup event handler"""
-    print(f"=== Ulticraft Bot v{VERSION} ===")
-    print(f"Logged in as {bot.user}")
-    print(f"Bot is ready to serve in guild: {config['guild_id']}")
-    print(f"Bot channel: {config['bot_channel_id']}")
+    print(f'Bot is ready! Logged in as {bot.user}')
+    print(f'Bot is in {len(bot.guilds)} guilds')
     
-    # Start the status update task
-    if not update_status.is_running():
-        update_status.start()
-        print("Started status update task")
-    
+    # Load commands
+    for filename in os.listdir("commands"):
+        if filename.endswith(".py"):
+            try:
+                bot.load_extension(f"commands.{filename[:-3]}")
+                print(f'Loaded extension: {filename}')
+            except Exception as e:
+                print(f'Failed to load extension {filename}: {e}')
+
+    # Sync commands
     try:
-        # Sync commands first
-        commands = await sync_commands()
+        print("\nSyncing commands...")
+        await bot.sync_all_application_commands()
+        print("Command sync complete")
         
-        # Send startup message to bot channel
-        guild_id = int(config['guild_id'])
-        guild = bot.get_guild(guild_id)
-        if guild:
-            channel = guild.get_channel(int(config['bot_channel_id']))
-            if channel:
-                await channel.send(f"🚀 Ulticraft Bot v{VERSION} is now online!")
-                
-                # List available commands
-                if commands:
-                    command_list = "\n".join([f"- /{cmd.name}" for cmd in commands])
-                    await channel.send(f"Available commands:\n```\n{command_list}\n```")
-                else:
-                    await channel.send("⚠️ No commands are currently registered!")
-            else:
-                print(f"Warning: Could not find channel with ID: {config['bot_channel_id']}")
+        # List registered commands
+        commands = bot.get_all_application_commands()
+        print("\nRegistered Commands:")
+        for cmd in commands:
+            print(f"- /{cmd.name}: {cmd.description}")
     except Exception as e:
-        print(f"Error during startup message: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        print(f"Error syncing commands: {e}")
 
-@update_status.before_loop
-async def before_update_status():
-    """Wait for the bot to be ready before starting the status update task"""
-    await bot.wait_until_ready()
+@bot.event
+async def on_application_command(interaction: nextcord.Interaction):
+    print(f'Command {interaction.application_command.name} was triggered by {interaction.user}')
 
-if __name__ == "__main__":
+@bot.event
+async def on_application_command_error(interaction: nextcord.Interaction, error: Exception):
+    print(f'Error in command {interaction.application_command.name}: {str(error)}')
     try:
-        print("Starting command loading process...")
-        load_commands()
-        print("Command loading complete, starting bot...")
-        bot.run(config['discord_token'])
+        if not interaction.response.is_done():
+            await interaction.response.send_message("❌ An error occurred", ephemeral=True)
     except Exception as e:
-        print(f"Failed to start bot: {e}")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
+        print(f"Failed to send error message: {e}")
+
+print('Starting bot...')
+bot.run(TOKEN)

@@ -1,43 +1,33 @@
 import os
 import sys
 import subprocess
-from nextcord import Interaction, slash_command
+import nextcord
 from nextcord.ext import commands
+import json
 
-# Add the project root directory to Python path for proper imports
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if project_root not in sys.path:
-    sys.path.append(project_root)
+from utils import check_channel, is_authorized
 
-from utils import check_channel, is_authorized, config
+# Load config for guild ID
+with open('config.json') as f:
+    config = json.load(f)
+
+GUILD_ID = int(config['guild_id'])
 
 class GitUpdateCommand(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        print("Initializing GitUpdateCommand cog")
 
-    @slash_command(
-        name="gitupdate",
-        description="Pull latest code from Git and restart the bot.",
-        guild_ids=[int(config['guild_id'])]
-    )
-    async def gitupdate(self, interaction: Interaction):
-        if not check_channel(interaction):
-            await interaction.response.send_message(
-                f"⚠️ Please use this command in <#{config['bot_channel_id']}>", 
-                ephemeral=True
-            )
-            return
-
-        if not is_authorized(interaction):
-            await interaction.response.send_message(
-                "⛔ You are not authorized to use this command.", 
-                ephemeral=True
-            )
-            return
-
-        await interaction.response.defer(ephemeral=True)
-
+    @nextcord.slash_command(name="gitupdate", description="Pull latest code from Git and restart the bot", guild_ids=[GUILD_ID])
+    async def gitupdate(self, interaction: nextcord.Interaction):
+        """Pull latest code from Git and restart the bot"""
         try:
+            if not is_authorized(interaction):
+                await interaction.response.send_message("⛔ You are not authorized to use this command.", ephemeral=True)
+                return
+
+            await interaction.response.defer(ephemeral=True)
+
             # Get the directory where the bot script is located
             bot_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             
@@ -50,12 +40,7 @@ class GitUpdateCommand(commands.Cog):
                 stderr=subprocess.STDOUT
             ).decode("utf-8")
 
-            # Send update message to bot channel
-            channel = self.bot.get_channel(int(config['bot_channel_id']))
-            if channel:
-                await channel.send(f"📥 Bot update initiated by {interaction.user.display_name}")
-
-            # Notify command user
+            # Send update message
             await interaction.followup.send(
                 f"📥 Git pull output:\n```{git_output}```\n🔄 Restarting bot...", 
                 ephemeral=True
@@ -72,10 +57,8 @@ class GitUpdateCommand(commands.Cog):
                 ephemeral=True
             )
         except Exception as e:
-            await interaction.followup.send(
-                f"❌ An unexpected error occurred:\n```{str(e)}```", 
-                ephemeral=True
-            )
+            print(f"Error in gitupdate command: {e}")
+            await interaction.followup.send("❌ An error occurred", ephemeral=True)
 
 def setup(bot):
     print(f"Setting up {__file__}")

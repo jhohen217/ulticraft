@@ -1,214 +1,140 @@
-import os
-import sys
-import subprocess
-import time
-import psutil
-from nextcord import Interaction, slash_command
+import nextcord
 from nextcord.ext import commands
+from mcipc.rcon import Client
+import json
+import os
+import subprocess
+import asyncio
+import signal
 
-# Add the project root directory to Python path for proper imports
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if project_root not in sys.path:
-    sys.path.append(project_root)
+# Load config
+with open('config.json') as f:
+    config = json.load(f)
 
-from utils import check_channel, is_authorized, get_rcon_client, config
+GUILD_ID = int(config['guild_id'])
+RCON_HOST = config['rcon']['host']
+RCON_PORT = config['rcon']['port']
+RCON_PASSWORD = config['rcon']['password']
+SERVER_DIR = config['minecraft_server']['directory']
+START_COMMAND = config['minecraft_server']['start_command']
+STOP_TIMEOUT = config['minecraft_server']['stop_timeout']
 
 class ServerCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.server_process = None
+        print("Initializing ServerCommands cog")
 
-    def is_server_running(self):
-        """Check if the Minecraft server is running"""
-        if self.server_process:
-            try:
-                # Check if process still exists
-                process = psutil.Process(self.server_process.pid)
-                return process.is_running()
-            except (psutil.NoSuchProcess, AttributeError):
-                self.server_process = None
-                return False
-        
-        # Check if we can connect via RCON
-        rcon = get_rcon_client()
-        if rcon:
-            rcon.stop()
-            return True
-        return False
+    async def connect_rcon(self):
+        try:
+            with Client(RCON_HOST, RCON_PORT, passwd=RCON_PASSWORD) as client:
+                return client
+        except Exception as e:
+            print(f"Failed to connect to RCON: {e}")
+            return None
 
-    async def stop_server(self, interaction):
-        """Stop the Minecraft server gracefully"""
-        rcon = get_rcon_client()
-        if rcon:
-            try:
-                # Warn players
-                rcon.command("say §c⚠️ Server is shutting down in 10 seconds!")
-                await interaction.followup.send("⏳ Warning players about shutdown...")
-                time.sleep(10)
-                
-                # Save and stop
-                rcon.command("save-all")
-                time.sleep(2)
-                rcon.command("stop")
-                rcon.stop()
-                
-                # Wait for server to fully stop
-                timeout = config['minecraft_server'].get('stop_timeout', 60)
-                start_time = time.time()
-                
-                while self.is_server_running():
-                    if time.time() - start_time > timeout:
-                        await interaction.followup.send("⚠️ Server stop timeout reached!")
-                        return False
-                    time.sleep(1)
-                
-                return True
-            except Exception as e:
-                await interaction.followup.send(f"❌ Error during graceful shutdown: {str(e)}")
-                return False
-        return False
-
-    @slash_command(
+    @nextcord.slash_command(
         name="start",
-        description="Start the Minecraft server.",
-        guild_ids=[int(config['guild_id'])]
+        description="Start the Minecraft server",
+        guild_ids=[GUILD_ID]
     )
-    async def start(self, interaction: Interaction):
-        if not check_channel(interaction):
-            await interaction.response.send_message(
-                f"⚠️ Please use this command in <#{config['bot_channel_id']}>", 
-                ephemeral=True
-            )
-            return
-
-        if not is_authorized(interaction):
-            await interaction.response.send_message(
-                "⛔ You are not authorized to use this command.", 
-                ephemeral=True
-            )
-            return
-
-        await interaction.response.defer()
-
-        if self.is_server_running():
-            await interaction.followup.send("⚠️ Server is already running!")
-            return
-
+    async def start(self, interaction: nextcord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        
         try:
-            server_dir = config['minecraft_server']['directory']
-            start_cmd = config['minecraft_server']['start_command'].split()
-            
-            # Change to server directory and start
-            os.chdir(server_dir)
-            self.server_process = subprocess.Popen(
-                start_cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
-            )
-            
-            await interaction.followup.send("🚀 Starting Minecraft server...")
-            
-            # Wait for server to start accepting connections
-            max_attempts = 30
-            for _ in range(max_attempts):
-                if self.is_server_running():
-                    await interaction.followup.send("✅ Server is now running!")
-                    return
-                time.sleep(2)
-            
-            await interaction.followup.send("⚠️ Server start timed out!")
-        except Exception as e:
-            await interaction.followup.send(f"❌ Error starting server: {str(e)}")
-
-    @slash_command(
-        name="stop",
-        description="Stop the Minecraft server.",
-        guild_ids=[int(config['guild_id'])]
-    )
-    async def stop(self, interaction: Interaction):
-        if not check_channel(interaction):
-            await interaction.response.send_message(
-                f"⚠️ Please use this command in <#{config['bot_channel_id']}>", 
-                ephemeral=True
-            )
-            return
-
-        if not is_authorized(interaction):
-            await interaction.response.send_message(
-                "⛔ You are not authorized to use this command.", 
-                ephemeral=True
-            )
-            return
-
-        await interaction.response.defer()
-
-        if not self.is_server_running():
-            await interaction.followup.send("⚠️ Server is not running!")
-            return
-
-        if await self.stop_server(interaction):
-            await interaction.followup.send("✅ Server has been stopped!")
-        else:
-            await interaction.followup.send("❌ Failed to stop server!")
-
-    @slash_command(
-        name="restart",
-        description="Restart the Minecraft server.",
-        guild_ids=[int(config['guild_id'])]
-    )
-    async def restart(self, interaction: Interaction):
-        if not check_channel(interaction):
-            await interaction.response.send_message(
-                f"⚠️ Please use this command in <#{config['bot_channel_id']}>", 
-                ephemeral=True
-            )
-            return
-
-        if not is_authorized(interaction):
-            await interaction.response.send_message(
-                "⛔ You are not authorized to use this command.", 
-                ephemeral=True
-            )
-            return
-
-        await interaction.response.defer()
-
-        if not self.is_server_running():
-            await interaction.followup.send("⚠️ Server is not running! Starting...")
-        else:
-            await interaction.followup.send("🔄 Stopping server for restart...")
-            if not await self.stop_server(interaction):
-                await interaction.followup.send("❌ Failed to stop server for restart!")
+            if self.server_process and self.server_process.poll() is None:
+                await interaction.followup.send("❌ Server is already running!", ephemeral=True)
                 return
-            await interaction.followup.send("✅ Server stopped, restarting...")
 
-        # Start the server
-        try:
-            server_dir = config['minecraft_server']['directory']
-            start_cmd = config['minecraft_server']['start_command'].split()
-            
-            # Change to server directory and start
-            os.chdir(server_dir)
-            self.server_process = subprocess.Popen(
-                start_cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
-            )
-            
-            # Wait for server to start accepting connections
-            max_attempts = 30
-            for _ in range(max_attempts):
-                if self.is_server_running():
-                    await interaction.followup.send("✅ Server has been restarted!")
-                    return
-                time.sleep(2)
-            
-            await interaction.followup.send("⚠️ Server restart timed out!")
+            # Change to server directory and start the server
+            os.chdir(SERVER_DIR)
+            self.server_process = subprocess.Popen(START_COMMAND.split())
+            await interaction.followup.send("🚀 Starting Minecraft server...", ephemeral=True)
         except Exception as e:
-            await interaction.followup.send(f"❌ Error during restart: {str(e)}")
+            print(f"Error starting server: {e}")
+            await interaction.followup.send("❌ Failed to start server", ephemeral=True)
+
+    @nextcord.slash_command(
+        name="stop",
+        description="Stop the Minecraft server",
+        guild_ids=[GUILD_ID]
+    )
+    async def stop(self, interaction: nextcord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        
+        try:
+            client = await self.connect_rcon()
+            if client:
+                # Send stop command through RCON
+                client.run('stop')
+                await interaction.followup.send("🛑 Stopping Minecraft server...", ephemeral=True)
+                
+                # Wait for process to end
+                if self.server_process:
+                    try:
+                        self.server_process.wait(timeout=STOP_TIMEOUT)
+                    except subprocess.TimeoutExpired:
+                        self.server_process.kill()
+                    self.server_process = None
+            else:
+                await interaction.followup.send("❌ Failed to connect to server", ephemeral=True)
+        except Exception as e:
+            print(f"Error stopping server: {e}")
+            await interaction.followup.send("❌ Failed to stop server", ephemeral=True)
+
+    @nextcord.slash_command(
+        name="restart",
+        description="Restart the Minecraft server",
+        guild_ids=[GUILD_ID]
+    )
+    async def restart(self, interaction: nextcord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        
+        try:
+            # Stop server
+            client = await self.connect_rcon()
+            if client:
+                client.run('stop')
+                await interaction.followup.send("🔄 Restarting Minecraft server...", ephemeral=True)
+                
+                # Wait for process to end
+                if self.server_process:
+                    try:
+                        self.server_process.wait(timeout=STOP_TIMEOUT)
+                    except subprocess.TimeoutExpired:
+                        self.server_process.kill()
+                    self.server_process = None
+
+                # Wait a moment before starting
+                await asyncio.sleep(5)
+
+                # Start server
+                os.chdir(SERVER_DIR)
+                self.server_process = subprocess.Popen(START_COMMAND.split())
+            else:
+                await interaction.followup.send("❌ Failed to connect to server", ephemeral=True)
+        except Exception as e:
+            print(f"Error restarting server: {e}")
+            await interaction.followup.send("❌ Failed to restart server", ephemeral=True)
+
+    @nextcord.slash_command(
+        name="rcon",
+        description="Send a command to the server",
+        guild_ids=[GUILD_ID]
+    )
+    async def rcon(self, interaction: nextcord.Interaction, command: str):
+        await interaction.response.defer(ephemeral=True)
+        
+        try:
+            client = await self.connect_rcon()
+            if client:
+                resp = client.run(command)
+                await interaction.followup.send(f"✅ Command response:\n```\n{resp}\n```", ephemeral=True)
+            else:
+                await interaction.followup.send("❌ Failed to connect to server", ephemeral=True)
+        except Exception as e:
+            print(f"Error executing RCON command: {e}")
+            await interaction.followup.send("❌ Failed to execute command", ephemeral=True)
 
 def setup(bot):
-    print(f"Setting up {__file__}")
     bot.add_cog(ServerCommands(bot))
