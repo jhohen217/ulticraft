@@ -20,18 +20,29 @@ class GitUpdateCommand(commands.Cog):
 
     @commands.command(
         name="gitupdate",
-        help="Pull the latest code from Git repository and restart the bot to apply changes. Only authorized users can use this command.",
-        brief="Update bot from Git and restart"
+        help="Update bot from Git and restart (authorized users only)",
+        brief="Update bot from Git",
+        description="Update bot code and restart"
     )
     async def gitupdate(self, ctx):
         """Pull latest code from Git and restart the bot"""
         try:
             if not is_authorized(ctx):
-                await ctx.send("> ⛔ You are not authorized to use this command.", ephemeral=True, suppress_embeds=True)
+                error_embed = nextcord.Embed(
+                    description="⛔ You are not authorized to use this command.",
+                    color=0xe74c3c
+                )
+                error_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+                await ctx.send(embed=error_embed)
                 return
 
             # Send initial message
-            status_msg = await ctx.send("> ⏳ Processing git update...", ephemeral=True, suppress_embeds=True)
+            processing_embed = nextcord.Embed(
+                description="⏳ Processing git update...",
+                color=0x2ecc71
+            )
+            processing_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+            status_msg = await ctx.send(embed=processing_embed)
 
             # Get the directory where the bot script is located
             bot_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -45,11 +56,13 @@ class GitUpdateCommand(commands.Cog):
                 stderr=subprocess.STDOUT
             ).decode("utf-8")
 
-            # Send update message
-            await status_msg.edit(
-                content=f"> 📥 Git pull output:\n```{git_output}```\n> 🔄 Restarting bot...",
-                suppress_embeds=True
+            # Update message with git output and restart notice
+            update_embed = nextcord.Embed(
+                description=f"📥 **Git Pull Output:**\n```{git_output}```\n🔄 **Restarting bot...**",
+                color=0x2ecc71
             )
+            update_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+            await status_msg.edit(embed=update_embed)
 
             # Exit the bot process - systemd or another supervisor should restart it
             print("Bot restart triggered by gitupdate command")
@@ -57,12 +70,20 @@ class GitUpdateCommand(commands.Cog):
 
         except subprocess.CalledProcessError as e:
             error_output = e.output.decode("utf-8")
-            await ctx.send(
-                f"> ❌ Failed to update:\n```{error_output}```", ephemeral=True, suppress_embeds=True
+            error_embed = nextcord.Embed(
+                description=f"❌ **Failed to update:**\n```{error_output}```",
+                color=0xe74c3c
             )
+            error_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+            await ctx.send(embed=error_embed)
         except Exception as e:
             print(f"Error in gitupdate command: {e}")
-            await ctx.send("> ❌ An error occurred", ephemeral=True, suppress_embeds=True)
+            error_embed = nextcord.Embed(
+                description="❌ An error occurred",
+                color=0xe74c3c
+            )
+            error_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+            await ctx.send(embed=error_embed)
 
 def setup(bot):
     print(f"Setting up {__file__}")

@@ -35,39 +35,71 @@ class ServerCommands(commands.Cog):
 
     @commands.command(
         name="start",
-        help="Start the Minecraft server if it's not already running",
-        brief="Start the server"
+        help="Start the Minecraft server if not running",
+        brief="Start the server",
+        description="Start the Minecraft server"
     )
     async def start(self, ctx):
-        status_msg = await ctx.send("> ⏳ Processing server start...", ephemeral=True, suppress_embeds=True)
+        processing_embed = nextcord.Embed(
+            description="⏳ Processing server start...",
+            color=0x2ecc71
+        )
+        processing_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+        status_msg = await ctx.send(embed=processing_embed)
         
         try:
             if self.server_process and self.server_process.poll() is None:
-                await status_msg.edit(content="> ❌ Server is already running!", suppress_embeds=True)
+                error_embed = nextcord.Embed(
+                    description="❌ Server is already running!",
+                    color=0xe74c3c
+                )
+                error_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+                await status_msg.edit(embed=error_embed)
                 return
 
             # Change to server directory and start the server
             os.chdir(SERVER_DIR)
             self.server_process = subprocess.Popen(START_COMMAND.split())
-            await status_msg.edit(content="> 🚀 Starting Minecraft server...", suppress_embeds=True)
+            success_embed = nextcord.Embed(
+                description="🚀 Starting Minecraft server...",
+                color=0x2ecc71
+            )
+            success_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+            await status_msg.edit(embed=success_embed)
         except Exception as e:
             print(f"Error starting server: {e}")
-            await status_msg.edit(content="> ❌ Failed to start server", suppress_embeds=True)
+            error_embed = nextcord.Embed(
+                description="❌ Failed to start server",
+                color=0xe74c3c
+            )
+            error_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+            await status_msg.edit(embed=error_embed)
 
     @commands.command(
         name="stop",
-        help="Safely stop the Minecraft server, saving all worlds and data",
-        brief="Stop the server"
+        help="Stop the Minecraft server safely (saves all data)",
+        brief="Stop the server",
+        description="Stop the Minecraft server"
     )
     async def stop(self, ctx):
-        status_msg = await ctx.send("> ⏳ Processing server stop...", ephemeral=True, suppress_embeds=True)
+        processing_embed = nextcord.Embed(
+            description="⏳ Processing server stop...",
+            color=0x2ecc71
+        )
+        processing_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+        status_msg = await ctx.send(embed=processing_embed)
         
         try:
             client = await self.connect_rcon()
             if client:
                 # Send stop command through RCON
                 client.run('stop')
-                await status_msg.edit(content="> 🛑 Stopping Minecraft server...", suppress_embeds=True)
+                stopping_embed = nextcord.Embed(
+                    description="🛑 Stopping Minecraft server...",
+                    color=0x2ecc71
+                )
+                stopping_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+                await status_msg.edit(embed=stopping_embed)
                 
                 # Wait for process to end
                 if self.server_process:
@@ -77,25 +109,46 @@ class ServerCommands(commands.Cog):
                         self.server_process.kill()
                     self.server_process = None
             else:
-                await status_msg.edit(content="> ❌ Failed to connect to server", suppress_embeds=True)
+                error_embed = nextcord.Embed(
+                    description="❌ Failed to connect to server",
+                    color=0xe74c3c
+                )
+                error_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+                await status_msg.edit(embed=error_embed)
         except Exception as e:
             print(f"Error stopping server: {e}")
-            await status_msg.edit(content="> ❌ Failed to stop server", suppress_embeds=True)
+            error_embed = nextcord.Embed(
+                description="❌ Failed to stop server",
+                color=0xe74c3c
+            )
+            error_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+            await status_msg.edit(embed=error_embed)
 
     @commands.command(
         name="restart",
-        help="Safely restart the Minecraft server - stops the server, waits for cleanup, then starts it again",
-        brief="Restart the server"
+        help="Restart the Minecraft server (players will need to reconnect)",
+        brief="Restart the server",
+        description="Restart the Minecraft server"
     )
     async def restart(self, ctx):
-        status_msg = await ctx.send("> ⏳ Processing server restart...", ephemeral=True, suppress_embeds=True)
+        processing_embed = nextcord.Embed(
+            description="⏳ Processing server restart...",
+            color=0x2ecc71
+        )
+        processing_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+        status_msg = await ctx.send(embed=processing_embed)
         
         try:
             # Stop server
             client = await self.connect_rcon()
             if client:
                 client.run('stop')
-                await status_msg.edit(content="> 🔄 Restarting Minecraft server...", suppress_embeds=True)
+                restarting_embed = nextcord.Embed(
+                    description="🔄 Restarting Minecraft server...",
+                    color=0x2ecc71
+                )
+                restarting_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+                await status_msg.edit(embed=restarting_embed)
                 
                 # Wait for process to end
                 if self.server_process:
@@ -112,29 +165,60 @@ class ServerCommands(commands.Cog):
                 os.chdir(SERVER_DIR)
                 self.server_process = subprocess.Popen(START_COMMAND.split())
             else:
-                await status_msg.edit(content="> ❌ Failed to connect to server", suppress_embeds=True)
+                error_embed = nextcord.Embed(
+                    description="❌ Failed to connect to server",
+                    color=0xe74c3c
+                )
+                error_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+                await status_msg.edit(embed=error_embed)
         except Exception as e:
             print(f"Error restarting server: {e}")
-            await status_msg.edit(content="> ❌ Failed to restart server", suppress_embeds=True)
+            error_embed = nextcord.Embed(
+                description="❌ Failed to restart server",
+                color=0xe74c3c
+            )
+            error_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+            await status_msg.edit(embed=error_embed)
 
     @commands.command(
         name="rcon",
-        help="Send a Minecraft server command through RCON. Usage: mc rcon <command>",
-        brief="Send server command"
+        help="Send a Minecraft command (e.g. `mc rcon say Hello`)",
+        brief="Send server command",
+        description="Execute Minecraft commands via RCON"
     )
     async def rcon(self, ctx, *, command: str):
-        status_msg = await ctx.send("> ⏳ Executing command...", ephemeral=True, suppress_embeds=True)
+        processing_embed = nextcord.Embed(
+            description="⏳ Executing command...",
+            color=0x2ecc71
+        )
+        processing_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+        status_msg = await ctx.send(embed=processing_embed)
         
         try:
             client = await self.connect_rcon()
             if client:
                 resp = client.run(command)
-                await status_msg.edit(content=f"> ✅ Command response:\n```\n{resp}\n```", suppress_embeds=True)
+                success_embed = nextcord.Embed(
+                    description=f"✅ Command response:\n```\n{resp}\n```",
+                    color=0x2ecc71
+                )
+                success_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+                await status_msg.edit(embed=success_embed)
             else:
-                await status_msg.edit(content="> ❌ Failed to connect to server", suppress_embeds=True)
+                error_embed = nextcord.Embed(
+                    description="❌ Failed to connect to server",
+                    color=0xe74c3c
+                )
+                error_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+                await status_msg.edit(embed=error_embed)
         except Exception as e:
             print(f"Error executing RCON command: {e}")
-            await status_msg.edit(content="> ❌ Failed to execute command", suppress_embeds=True)
+            error_embed = nextcord.Embed(
+                description="❌ Failed to execute command",
+                color=0xe74c3c
+            )
+            error_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+            await status_msg.edit(embed=error_embed)
 
 def setup(bot):
     bot.add_cog(ServerCommands(bot))

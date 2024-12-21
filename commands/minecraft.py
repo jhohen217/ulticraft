@@ -27,43 +27,85 @@ class MinecraftCommands(commands.Cog):
 
     @commands.command(
         name="morning",
-        help="Sets the time to morning (6:00 AM) on the Minecraft server",
-        brief="Set server time to morning"
+        help="Set time to morning (6:00 AM)",
+        brief="Set server time to morning",
+        description="Set time to morning"
     )
     async def morning(self, ctx):
         # Send initial message
-        status_msg = await ctx.send("> ⏳ Setting time to morning...", ephemeral=True, suppress_embeds=True)
+        processing_embed = nextcord.Embed(
+            description="⏳ Setting time to morning...",
+            color=0x2ecc71
+        )
+        processing_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+        status_msg = await ctx.send(embed=processing_embed)
         
         try:
             client = await self.connect_rcon()
             if client:
                 resp = client.run('time set day')
-                await status_msg.edit(content="> ☀️ Time set to morning!", suppress_embeds=True)
+                success_embed = nextcord.Embed(
+                    description="☀️ Time set to morning!",
+                    color=0x2ecc71
+                )
+                success_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+                await status_msg.edit(embed=success_embed)
             else:
-                await status_msg.edit(content="> ❌ Failed to connect to server", suppress_embeds=True)
+                error_embed = nextcord.Embed(
+                    description="❌ Failed to connect to server",
+                    color=0xe74c3c
+                )
+                error_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+                await status_msg.edit(embed=error_embed)
         except Exception as e:
             print(f"Error in morning command: {e}")
-            await status_msg.edit(content="> ❌ An error occurred", suppress_embeds=True)
+            error_embed = nextcord.Embed(
+                description="❌ An error occurred",
+                color=0xe74c3c
+            )
+            error_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+            await status_msg.edit(embed=error_embed)
 
     @commands.command(
         name="players",
-        help="Shows a list of all players currently online on the Minecraft server",
-        brief="List online players"
+        help="Show list of online players",
+        brief="List online players",
+        description="Show online players"
     )
     async def players(self, ctx):
         # Send initial message
-        status_msg = await ctx.send("> ⏳ Getting player list...", ephemeral=True, suppress_embeds=True)
+        processing_embed = nextcord.Embed(
+            description="⏳ Getting player list...",
+            color=0x2ecc71
+        )
+        processing_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+        status_msg = await ctx.send(embed=processing_embed)
         
         try:
             client = await self.connect_rcon()
             if client:
                 resp = client.run('list')
-                await status_msg.edit(content=f"> 👥 {resp}", suppress_embeds=True)
+                success_embed = nextcord.Embed(
+                    description=f"👥 {resp}",
+                    color=0x2ecc71
+                )
+                success_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+                await status_msg.edit(embed=success_embed)
             else:
-                await status_msg.edit(content="> ❌ Failed to connect to server", suppress_embeds=True)
+                error_embed = nextcord.Embed(
+                    description="❌ Failed to connect to server",
+                    color=0xe74c3c
+                )
+                error_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+                await status_msg.edit(embed=error_embed)
         except Exception as e:
             print(f"Error in players command: {e}")
-            await status_msg.edit(content="> ❌ An error occurred", suppress_embeds=True)
+            error_embed = nextcord.Embed(
+                description="❌ An error occurred",
+                color=0xe74c3c
+            )
+            error_embed.set_author(name="", icon_url="https://i.imgur.com/1YBYnHn.png")
+            await status_msg.edit(embed=error_embed)
 
 def setup(bot):
     bot.add_cog(MinecraftCommands(bot))
