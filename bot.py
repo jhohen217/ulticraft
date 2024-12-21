@@ -14,27 +14,28 @@ GUILD_ID = int(config['guild_id'])
 intents = nextcord.Intents.default()
 intents.message_content = True
 intents.guilds = True
-bot = commands.Bot(
-    command_prefix="mc ",
-    intents=intents,
-    help_command=commands.DefaultHelpCommand(
-        no_category="Commands",
-        dm_help=False,
-        command_attrs={
-            "name": "help",
-            "help": "Shows this help message",
-            "brief": "Shows command list"
-        }
-    )
-)
+bot = commands.Bot(command_prefix="mc ", intents=intents)
 
-# Add command descriptions
-bot.description = """
-Ulticraft Discord Bot - Minecraft Server Management
+# Remove default help command
+bot.remove_command('help')
 
-Use `mc help` to see this list of commands.
-All commands use the prefix 'mc '.
-"""
+@bot.command(name="help")
+async def help(ctx):
+    help_text = [
+        "> 🤖 **Ulticraft Discord Bot - Minecraft Server Management**",
+        "> ",
+        "> Available Commands:",
+        "> • `mc ping` - Check bot latency",
+        "> • `mc gitupdate` - Update bot from Git",
+        "> • `mc morning` - Set server time to morning",
+        "> • `mc players` - List online players",
+        "> • `mc start` - Start the server",
+        "> • `mc stop` - Stop the server",
+        "> • `mc restart` - Restart the server",
+        "> • `mc rcon` - Send command to server",
+        "> • `mc help` - Show this help message"
+    ]
+    await ctx.send("\n".join(help_text), ephemeral=True, suppress_embeds=True)
 
 @bot.event
 async def on_ready():
