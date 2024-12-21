@@ -60,7 +60,7 @@ async def on_command_error(ctx, error):
     error_msg = f'Error in command {ctx.command}: {str(error)}'
     print(error_msg)
     try:
-        await ctx.send(f"> ❌ An error occurred\n```\n{error_msg}\n```", ephemeral=True)
+        await ctx.send(f"> ❌ An error occurred\n```\n{error_msg}\n```", ephemeral=True, suppress_embeds=True)
     except Exception as e:
         print(f"Failed to send error message: {e}")
 

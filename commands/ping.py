@@ -15,11 +15,11 @@ class PingCommand(commands.Cog):
         try:
             # Calculate and send latency in one message
             latency = round(self.bot.latency * 1000)
-            await ctx.send(f"> 🏓 Pong! Latency: {latency}ms", ephemeral=True)
+            await ctx.send(f"> 🏓 Pong! Latency: {latency}ms", ephemeral=True, suppress_embeds=True)
             print("Ping command response sent and updated")
         except Exception as e:
             print(f"Error in ping command: {str(e)}")
-            await ctx.send("> ❌ An error occurred", ephemeral=True)
+            await ctx.send("> ❌ An error occurred", ephemeral=True, suppress_embeds=True)
 
 def setup(bot):
     bot.add_cog(PingCommand(bot))

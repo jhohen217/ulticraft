@@ -32,18 +32,18 @@ class MinecraftCommands(commands.Cog):
     )
     async def morning(self, ctx):
         # Send initial message
-        status_msg = await ctx.send("> ⏳ Setting time to morning...", ephemeral=True)
+        status_msg = await ctx.send("> ⏳ Setting time to morning...", ephemeral=True, suppress_embeds=True)
         
         try:
             client = await self.connect_rcon()
             if client:
                 resp = client.run('time set day')
-                await status_msg.edit(content="> ☀️ Time set to morning!")
+                await status_msg.edit(content="> ☀️ Time set to morning!", suppress_embeds=True)
             else:
-                await status_msg.edit(content="> ❌ Failed to connect to server")
+                await status_msg.edit(content="> ❌ Failed to connect to server", suppress_embeds=True)
         except Exception as e:
             print(f"Error in morning command: {e}")
-            await status_msg.edit(content="> ❌ An error occurred")
+            await status_msg.edit(content="> ❌ An error occurred", suppress_embeds=True)
 
     @commands.command(
         name="players",
@@ -52,18 +52,18 @@ class MinecraftCommands(commands.Cog):
     )
     async def players(self, ctx):
         # Send initial message
-        status_msg = await ctx.send("> ⏳ Getting player list...", ephemeral=True)
+        status_msg = await ctx.send("> ⏳ Getting player list...", ephemeral=True, suppress_embeds=True)
         
         try:
             client = await self.connect_rcon()
             if client:
                 resp = client.run('list')
-                await status_msg.edit(content=f"> 👥 {resp}")
+                await status_msg.edit(content=f"> 👥 {resp}", suppress_embeds=True)
             else:
-                await status_msg.edit(content="> ❌ Failed to connect to server")
+                await status_msg.edit(content="> ❌ Failed to connect to server", suppress_embeds=True)
         except Exception as e:
             print(f"Error in players command: {e}")
-            await status_msg.edit(content="> ❌ An error occurred")
+            await status_msg.edit(content="> ❌ An error occurred", suppress_embeds=True)
 
 def setup(bot):
     bot.add_cog(MinecraftCommands(bot))
