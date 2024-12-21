@@ -13,12 +13,9 @@ class PingCommand(commands.Cog):
     async def ping(self, ctx):
         print(f"Ping command triggered by {ctx.author}")
         try:
-            # Send initial message
-            message = await ctx.send("> 🏓 Calculating ping...", ephemeral=True)
-            
-            # Then edit the message with the actual latency
+            # Calculate and send latency in one message
             latency = round(self.bot.latency * 1000)
-            await message.edit(content=f"> 🏓 Pong! ({latency}ms)")
+            await ctx.send(f"> 🏓 Pong! Latency: {latency}ms", ephemeral=True)
             print("Ping command response sent and updated")
         except Exception as e:
             print(f"Error in ping command: {str(e)}")
