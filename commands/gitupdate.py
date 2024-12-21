@@ -18,15 +18,16 @@ class GitUpdateCommand(commands.Cog):
         self.bot = bot
         print("Initializing GitUpdateCommand cog")
 
-    @nextcord.slash_command(name="gitupdate", description="Pull latest code from Git and restart the bot", guild_ids=[GUILD_ID])
-    async def gitupdate(self, interaction: nextcord.Interaction):
+    @commands.command(name="gitupdate", description="Pull latest code from Git and restart the bot")
+    async def gitupdate(self, ctx):
         """Pull latest code from Git and restart the bot"""
         try:
-            if not is_authorized(interaction):
-                await interaction.response.send_message("⛔ You are not authorized to use this command.", ephemeral=True)
+            if not is_authorized(ctx):
+                await ctx.send("⛔ You are not authorized to use this command.")
                 return
 
-            await interaction.response.defer(ephemeral=True)
+            # Send initial message
+            status_msg = await ctx.send("⏳ Processing git update...")
 
             # Get the directory where the bot script is located
             bot_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -41,9 +42,8 @@ class GitUpdateCommand(commands.Cog):
             ).decode("utf-8")
 
             # Send update message
-            await interaction.followup.send(
-                f"📥 Git pull output:\n```{git_output}```\n🔄 Restarting bot...", 
-                ephemeral=True
+            await status_msg.edit(
+                content=f"📥 Git pull output:\n```{git_output}```\n🔄 Restarting bot..."
             )
 
             # Exit the bot process - systemd or another supervisor should restart it
@@ -52,13 +52,12 @@ class GitUpdateCommand(commands.Cog):
 
         except subprocess.CalledProcessError as e:
             error_output = e.output.decode("utf-8")
-            await interaction.followup.send(
-                f"❌ Failed to update:\n```{error_output}```", 
-                ephemeral=True
+            await ctx.send(
+                f"❌ Failed to update:\n```{error_output}```"
             )
         except Exception as e:
             print(f"Error in gitupdate command: {e}")
-            await interaction.followup.send("❌ An error occurred", ephemeral=True)
+            await ctx.send("❌ An error occurred")
 
 def setup(bot):
     print(f"Setting up {__file__}")

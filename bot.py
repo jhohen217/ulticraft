@@ -14,7 +14,7 @@ GUILD_ID = int(config['guild_id'])
 intents = nextcord.Intents.default()
 intents.message_content = True
 intents.guilds = True
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix="mc ", intents=intents)
 
 @bot.event
 async def on_ready():
@@ -30,30 +30,16 @@ async def on_ready():
             except Exception as e:
                 print(f'Failed to load extension {filename}: {e}')
 
-    # Sync commands
-    try:
-        print("\nSyncing commands...")
-        await bot.sync_all_application_commands()
-        print("Command sync complete")
-        
-        # List registered commands
-        commands = bot.get_all_application_commands()
-        print("\nRegistered Commands:")
-        for cmd in commands:
-            print(f"- /{cmd.name}: {cmd.description}")
-    except Exception as e:
-        print(f"Error syncing commands: {e}")
+    # List registered commands
+    print("\nRegistered Commands:")
+    for cmd in bot.commands:
+        print(f"- mc {cmd.name}: {cmd.description if cmd.description else 'No description'}")
 
 @bot.event
-async def on_application_command(interaction: nextcord.Interaction):
-    print(f'Command {interaction.application_command.name} was triggered by {interaction.user}')
-
-@bot.event
-async def on_application_command_error(interaction: nextcord.Interaction, error: Exception):
-    print(f'Error in command {interaction.application_command.name}: {str(error)}')
+async def on_command_error(ctx, error):
+    print(f'Error in command {ctx.command}: {str(error)}')
     try:
-        if not interaction.response.is_done():
-            await interaction.response.send_message("❌ An error occurred", ephemeral=True)
+        await ctx.send("❌ An error occurred")
     except Exception as e:
         print(f"Failed to send error message: {e}")
 

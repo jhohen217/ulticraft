@@ -1,18 +1,18 @@
 import json
 from mctools import RCONClient
-from nextcord import Interaction
+from nextcord.ext.commands import Context
 
 # Load configuration
 with open('config.json', 'r') as f:
     config = json.load(f)
 
-def check_channel(interaction: Interaction) -> bool:
+def check_channel(ctx: Context) -> bool:
     """Check if the command is being used in the correct channel"""
-    return str(interaction.channel_id) == str(config['bot_channel_id'])
+    return str(ctx.channel.id) == str(config['bot_channel_id'])
 
-def is_authorized(interaction: Interaction) -> bool:
+def is_authorized(ctx: Context) -> bool:
     """Check if the user is authorized to use admin commands"""
-    return str(interaction.user.id) in config['authorized_users']
+    return str(ctx.author.id) in config['authorized_users']
 
 def get_rcon_client() -> RCONClient:
     """Get an RCON client connected to the Minecraft server"""

@@ -17,7 +17,7 @@ class MinecraftCommands(commands.Cog):
         self.bot = bot
         print("Initializing MinecraftCommands cog")
 
-    async def connect_rcon(self, interaction: nextcord.Interaction):
+    async def connect_rcon(self):
         try:
             with Client(RCON_HOST, RCON_PORT, passwd=RCON_PASSWORD) as client:
                 return client
@@ -25,45 +25,43 @@ class MinecraftCommands(commands.Cog):
             print(f"Failed to connect to RCON: {e}")
             return None
 
-    @nextcord.slash_command(
+    @commands.command(
         name="morning",
-        description="Set the time to morning on the server",
-        guild_ids=[GUILD_ID]
+        description="Set the time to morning on the server"
     )
-    async def morning(self, interaction: nextcord.Interaction):
-        # Respond immediately
-        await interaction.response.defer(ephemeral=True)
+    async def morning(self, ctx):
+        # Send initial message
+        status_msg = await ctx.send("⏳ Setting time to morning...")
         
         try:
-            client = await self.connect_rcon(interaction)
+            client = await self.connect_rcon()
             if client:
                 resp = client.run('time set day')
-                await interaction.followup.send("☀️ Time set to morning!", ephemeral=True)
+                await status_msg.edit(content="☀️ Time set to morning!")
             else:
-                await interaction.followup.send("❌ Failed to connect to server", ephemeral=True)
+                await status_msg.edit(content="❌ Failed to connect to server")
         except Exception as e:
             print(f"Error in morning command: {e}")
-            await interaction.followup.send("❌ An error occurred", ephemeral=True)
+            await status_msg.edit(content="❌ An error occurred")
 
-    @nextcord.slash_command(
+    @commands.command(
         name="players",
-        description="List all online players",
-        guild_ids=[GUILD_ID]
+        description="List all online players"
     )
-    async def players(self, interaction: nextcord.Interaction):
-        # Respond immediately
-        await interaction.response.defer(ephemeral=True)
+    async def players(self, ctx):
+        # Send initial message
+        status_msg = await ctx.send("⏳ Getting player list...")
         
         try:
-            client = await self.connect_rcon(interaction)
+            client = await self.connect_rcon()
             if client:
                 resp = client.run('list')
-                await interaction.followup.send(f"👥 {resp}", ephemeral=True)
+                await status_msg.edit(content=f"👥 {resp}")
             else:
-                await interaction.followup.send("❌ Failed to connect to server", ephemeral=True)
+                await status_msg.edit(content="❌ Failed to connect to server")
         except Exception as e:
             print(f"Error in players command: {e}")
-            await interaction.followup.send("❌ An error occurred", ephemeral=True)
+            await status_msg.edit(content="❌ An error occurred")
 
 def setup(bot):
     bot.add_cog(MinecraftCommands(bot))

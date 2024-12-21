@@ -33,41 +33,39 @@ class ServerCommands(commands.Cog):
             print(f"Failed to connect to RCON: {e}")
             return None
 
-    @nextcord.slash_command(
+    @commands.command(
         name="start",
-        description="Start the Minecraft server",
-        guild_ids=[GUILD_ID]
+        description="Start the Minecraft server"
     )
-    async def start(self, interaction: nextcord.Interaction):
-        await interaction.response.defer(ephemeral=True)
+    async def start(self, ctx):
+        status_msg = await ctx.send("⏳ Processing server start...")
         
         try:
             if self.server_process and self.server_process.poll() is None:
-                await interaction.followup.send("❌ Server is already running!", ephemeral=True)
+                await status_msg.edit(content="❌ Server is already running!")
                 return
 
             # Change to server directory and start the server
             os.chdir(SERVER_DIR)
             self.server_process = subprocess.Popen(START_COMMAND.split())
-            await interaction.followup.send("🚀 Starting Minecraft server...", ephemeral=True)
+            await status_msg.edit(content="🚀 Starting Minecraft server...")
         except Exception as e:
             print(f"Error starting server: {e}")
-            await interaction.followup.send("❌ Failed to start server", ephemeral=True)
+            await status_msg.edit(content="❌ Failed to start server")
 
-    @nextcord.slash_command(
+    @commands.command(
         name="stop",
-        description="Stop the Minecraft server",
-        guild_ids=[GUILD_ID]
+        description="Stop the Minecraft server"
     )
-    async def stop(self, interaction: nextcord.Interaction):
-        await interaction.response.defer(ephemeral=True)
+    async def stop(self, ctx):
+        status_msg = await ctx.send("⏳ Processing server stop...")
         
         try:
             client = await self.connect_rcon()
             if client:
                 # Send stop command through RCON
                 client.run('stop')
-                await interaction.followup.send("🛑 Stopping Minecraft server...", ephemeral=True)
+                await status_msg.edit(content="🛑 Stopping Minecraft server...")
                 
                 # Wait for process to end
                 if self.server_process:
@@ -77,25 +75,24 @@ class ServerCommands(commands.Cog):
                         self.server_process.kill()
                     self.server_process = None
             else:
-                await interaction.followup.send("❌ Failed to connect to server", ephemeral=True)
+                await status_msg.edit(content="❌ Failed to connect to server")
         except Exception as e:
             print(f"Error stopping server: {e}")
-            await interaction.followup.send("❌ Failed to stop server", ephemeral=True)
+            await status_msg.edit(content="❌ Failed to stop server")
 
-    @nextcord.slash_command(
+    @commands.command(
         name="restart",
-        description="Restart the Minecraft server",
-        guild_ids=[GUILD_ID]
+        description="Restart the Minecraft server"
     )
-    async def restart(self, interaction: nextcord.Interaction):
-        await interaction.response.defer(ephemeral=True)
+    async def restart(self, ctx):
+        status_msg = await ctx.send("⏳ Processing server restart...")
         
         try:
             # Stop server
             client = await self.connect_rcon()
             if client:
                 client.run('stop')
-                await interaction.followup.send("🔄 Restarting Minecraft server...", ephemeral=True)
+                await status_msg.edit(content="🔄 Restarting Minecraft server...")
                 
                 # Wait for process to end
                 if self.server_process:
@@ -112,29 +109,28 @@ class ServerCommands(commands.Cog):
                 os.chdir(SERVER_DIR)
                 self.server_process = subprocess.Popen(START_COMMAND.split())
             else:
-                await interaction.followup.send("❌ Failed to connect to server", ephemeral=True)
+                await status_msg.edit(content="❌ Failed to connect to server")
         except Exception as e:
             print(f"Error restarting server: {e}")
-            await interaction.followup.send("❌ Failed to restart server", ephemeral=True)
+            await status_msg.edit(content="❌ Failed to restart server")
 
-    @nextcord.slash_command(
+    @commands.command(
         name="rcon",
-        description="Send a command to the server",
-        guild_ids=[GUILD_ID]
+        description="Send a command to the server"
     )
-    async def rcon(self, interaction: nextcord.Interaction, command: str):
-        await interaction.response.defer(ephemeral=True)
+    async def rcon(self, ctx, *, command: str):
+        status_msg = await ctx.send("⏳ Executing command...")
         
         try:
             client = await self.connect_rcon()
             if client:
                 resp = client.run(command)
-                await interaction.followup.send(f"✅ Command response:\n```\n{resp}\n```", ephemeral=True)
+                await status_msg.edit(content=f"✅ Command response:\n```\n{resp}\n```")
             else:
-                await interaction.followup.send("❌ Failed to connect to server", ephemeral=True)
+                await status_msg.edit(content="❌ Failed to connect to server")
         except Exception as e:
             print(f"Error executing RCON command: {e}")
-            await interaction.followup.send("❌ Failed to execute command", ephemeral=True)
+            await status_msg.edit(content="❌ Failed to execute command")
 
 def setup(bot):
     bot.add_cog(ServerCommands(bot))
