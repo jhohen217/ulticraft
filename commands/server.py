@@ -35,37 +35,39 @@ class ServerCommands(commands.Cog):
 
     @commands.command(
         name="start",
-        description="Start the Minecraft server"
+        help="Start the Minecraft server if it's not already running",
+        brief="Start the server"
     )
     async def start(self, ctx):
-        status_msg = await ctx.send("⏳ Processing server start...")
+        status_msg = await ctx.send("> ⏳ Processing server start...", ephemeral=True)
         
         try:
             if self.server_process and self.server_process.poll() is None:
-                await status_msg.edit(content="❌ Server is already running!")
+                await status_msg.edit(content="> ❌ Server is already running!")
                 return
 
             # Change to server directory and start the server
             os.chdir(SERVER_DIR)
             self.server_process = subprocess.Popen(START_COMMAND.split())
-            await status_msg.edit(content="🚀 Starting Minecraft server...")
+            await status_msg.edit(content="> 🚀 Starting Minecraft server...")
         except Exception as e:
             print(f"Error starting server: {e}")
-            await status_msg.edit(content="❌ Failed to start server")
+            await status_msg.edit(content="> ❌ Failed to start server")
 
     @commands.command(
         name="stop",
-        description="Stop the Minecraft server"
+        help="Safely stop the Minecraft server, saving all worlds and data",
+        brief="Stop the server"
     )
     async def stop(self, ctx):
-        status_msg = await ctx.send("⏳ Processing server stop...")
+        status_msg = await ctx.send("> ⏳ Processing server stop...", ephemeral=True)
         
         try:
             client = await self.connect_rcon()
             if client:
                 # Send stop command through RCON
                 client.run('stop')
-                await status_msg.edit(content="🛑 Stopping Minecraft server...")
+                await status_msg.edit(content="> 🛑 Stopping Minecraft server...")
                 
                 # Wait for process to end
                 if self.server_process:
@@ -75,24 +77,25 @@ class ServerCommands(commands.Cog):
                         self.server_process.kill()
                     self.server_process = None
             else:
-                await status_msg.edit(content="❌ Failed to connect to server")
+                await status_msg.edit(content="> ❌ Failed to connect to server")
         except Exception as e:
             print(f"Error stopping server: {e}")
-            await status_msg.edit(content="❌ Failed to stop server")
+            await status_msg.edit(content="> ❌ Failed to stop server")
 
     @commands.command(
         name="restart",
-        description="Restart the Minecraft server"
+        help="Safely restart the Minecraft server - stops the server, waits for cleanup, then starts it again",
+        brief="Restart the server"
     )
     async def restart(self, ctx):
-        status_msg = await ctx.send("⏳ Processing server restart...")
+        status_msg = await ctx.send("> ⏳ Processing server restart...", ephemeral=True)
         
         try:
             # Stop server
             client = await self.connect_rcon()
             if client:
                 client.run('stop')
-                await status_msg.edit(content="🔄 Restarting Minecraft server...")
+                await status_msg.edit(content="> 🔄 Restarting Minecraft server...")
                 
                 # Wait for process to end
                 if self.server_process:
@@ -109,28 +112,29 @@ class ServerCommands(commands.Cog):
                 os.chdir(SERVER_DIR)
                 self.server_process = subprocess.Popen(START_COMMAND.split())
             else:
-                await status_msg.edit(content="❌ Failed to connect to server")
+                await status_msg.edit(content="> ❌ Failed to connect to server")
         except Exception as e:
             print(f"Error restarting server: {e}")
-            await status_msg.edit(content="❌ Failed to restart server")
+            await status_msg.edit(content="> ❌ Failed to restart server")
 
     @commands.command(
         name="rcon",
-        description="Send a command to the server"
+        help="Send a Minecraft server command through RCON. Usage: mc rcon <command>",
+        brief="Send server command"
     )
     async def rcon(self, ctx, *, command: str):
-        status_msg = await ctx.send("⏳ Executing command...")
+        status_msg = await ctx.send("> ⏳ Executing command...", ephemeral=True)
         
         try:
             client = await self.connect_rcon()
             if client:
                 resp = client.run(command)
-                await status_msg.edit(content=f"✅ Command response:\n```\n{resp}\n```")
+                await status_msg.edit(content=f"> ✅ Command response:\n```\n{resp}\n```")
             else:
-                await status_msg.edit(content="❌ Failed to connect to server")
+                await status_msg.edit(content="> ❌ Failed to connect to server")
         except Exception as e:
             print(f"Error executing RCON command: {e}")
-            await status_msg.edit(content="❌ Failed to execute command")
+            await status_msg.edit(content="> ❌ Failed to execute command")
 
 def setup(bot):
     bot.add_cog(ServerCommands(bot))

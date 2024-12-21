@@ -27,41 +27,43 @@ class MinecraftCommands(commands.Cog):
 
     @commands.command(
         name="morning",
-        description="Set the time to morning on the server"
+        help="Sets the time to morning (6:00 AM) on the Minecraft server",
+        brief="Set server time to morning"
     )
     async def morning(self, ctx):
         # Send initial message
-        status_msg = await ctx.send("⏳ Setting time to morning...")
+        status_msg = await ctx.send("> ⏳ Setting time to morning...", ephemeral=True)
         
         try:
             client = await self.connect_rcon()
             if client:
                 resp = client.run('time set day')
-                await status_msg.edit(content="☀️ Time set to morning!")
+                await status_msg.edit(content="> ☀️ Time set to morning!")
             else:
-                await status_msg.edit(content="❌ Failed to connect to server")
+                await status_msg.edit(content="> ❌ Failed to connect to server")
         except Exception as e:
             print(f"Error in morning command: {e}")
-            await status_msg.edit(content="❌ An error occurred")
+            await status_msg.edit(content="> ❌ An error occurred")
 
     @commands.command(
         name="players",
-        description="List all online players"
+        help="Shows a list of all players currently online on the Minecraft server",
+        brief="List online players"
     )
     async def players(self, ctx):
         # Send initial message
-        status_msg = await ctx.send("⏳ Getting player list...")
+        status_msg = await ctx.send("> ⏳ Getting player list...", ephemeral=True)
         
         try:
             client = await self.connect_rcon()
             if client:
                 resp = client.run('list')
-                await status_msg.edit(content=f"👥 {resp}")
+                await status_msg.edit(content=f"> 👥 {resp}")
             else:
-                await status_msg.edit(content="❌ Failed to connect to server")
+                await status_msg.edit(content="> ❌ Failed to connect to server")
         except Exception as e:
             print(f"Error in players command: {e}")
-            await status_msg.edit(content="❌ An error occurred")
+            await status_msg.edit(content="> ❌ An error occurred")
 
 def setup(bot):
     bot.add_cog(MinecraftCommands(bot))
